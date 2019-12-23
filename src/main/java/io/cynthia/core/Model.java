@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.tensorflow.Session;
 
+import java.util.Map;
 import java.util.Properties;
 
 @Accessors(fluent = true, chain = true)
@@ -12,8 +13,9 @@ import java.util.Properties;
 @NoArgsConstructor
 @Setter
 public class Model {
-    private Index index;
+    private Map<String, Object> index;
     private Properties properties;
     private Session session;
-    private String modelId;
+    private String location;
+    private String id;
 }
