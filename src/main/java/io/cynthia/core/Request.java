@@ -9,7 +9,7 @@ import lombok.experimental.Accessors;
 import java.util.List;
 import java.util.Map;
 
-@Accessors(fluent = true, chain = true)
+@Accessors(chain = true)
 @AllArgsConstructor
 @Data
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
