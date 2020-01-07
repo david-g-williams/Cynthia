@@ -10,7 +10,8 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.springframework.stereotype.Component;
 import org.tensorflow.SavedModelBundle;
-import org.tensorflow.Session;
+import org.tensorflow.framework.ConfigProto;
+import org.tensorflow.framework.GPUOptions;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
@@ -29,6 +30,7 @@ public class LoadingService {
     @PostConstruct
     private void postConstruct() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("Closing all SavedModelBundle");
             for (SavedModelBundle savedModelBundle : savedModelBundles) {
                 savedModelBundle.close();
             }
@@ -70,9 +72,23 @@ public class LoadingService {
         }
         model.setIndex(index);
 
-        String modelDir = properties.getProperty("model.dir", "model");
-        Path modelPath = Paths.get(unpackDirectory.toString(), modelDir);
-        SavedModelBundle savedModelBundle = SavedModelBundle.load(modelPath.toString(), "serve");
+        String modelBundle = properties.getProperty("model.bundle", "model");
+
+        String modelPath = Paths.get(unpackDirectory.toString(), modelBundle).toString();
+
+        ConfigProto configProto = ConfigProto.newBuilder()
+            .setAllowSoftPlacement(true)
+            .setGpuOptions(GPUOptions
+                .newBuilder()
+                .setPerProcessGpuMemoryFraction(1.00)
+                .build())
+            .build();
+
+        SavedModelBundle savedModelBundle = SavedModelBundle.loader(modelPath)
+            .withTags("serve")
+            .withConfigProto(configProto.toByteArray())
+            .load();
+
         model.setSession(savedModelBundle.session());
 
         savedModelBundles.add(savedModelBundle);

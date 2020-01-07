@@ -6,9 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import java.util.List;
-import java.util.Map;
-
 @Accessors(chain = true)
 @AllArgsConstructor
 @Data
@@ -16,5 +13,5 @@ import java.util.Map;
 @NoArgsConstructor
 public class Response {
     private String modelId;
-    private List<Map<String, Object>> results;
+    private Object results;
 }

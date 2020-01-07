@@ -25,24 +25,22 @@ public class ProcessingService {
     private LoadingService loadingService;
 
     private final Map<String, Model> models = new HashMap<>();
-    private final Map<String, Processor> processors = new HashMap<>();
+    private final Map<String, Lambda<?>> processors = new HashMap<>();
 
     @PostConstruct
     private void postConstruct() {
         try {
             Path tempDirectory = Paths.get(System.getProperty("java.io.tmpdir"),  "cynthia", "models");
-
             Map<String, ModelDef> modelDefs = YAML.toObject(Resources.readResource("/models.yaml"), new TypeReference<>() {});
-
             for(String modelId : modelDefs.keySet()) {
                 ModelDef modelDef = modelDefs.get(modelId);
                 Path archivePath = Paths.get(modelDef.getLocation());
                 Path unpackDirectory = Paths.get(tempDirectory.toString(), UUID.randomUUID().toString());
                 Model model = loadingService.loadModel(modelId, archivePath, unpackDirectory);
                 String processorName = model.getProperties().getProperty("model.processor");
-                Processor processor = (Processor) Class.forName(processorName).getDeclaredConstructor().newInstance();
+                Lambda<?> lambda = (Lambda<?>) Class.forName(processorName).getDeclaredConstructor().newInstance();
                 models.put(modelId, model);
-                processors.put(modelId, processor);
+                processors.put(modelId, lambda);
             }
         } catch (Exception e) {
             log.error("Could not load models.", e);
