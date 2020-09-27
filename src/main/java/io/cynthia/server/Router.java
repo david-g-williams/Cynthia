@@ -1,6 +1,8 @@
 package io.cynthia.server;
 
-import io.cynthia.handler.ProcessingHandler;
+import io.cynthia.Constants;
+import io.cynthia.server.handlers.Processing;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.*;
@@ -9,7 +11,7 @@ import org.springframework.web.reactive.function.server.*;
 public class Router {
 
     @Bean
-    public RouterFunction<ServerResponse> predict(ProcessingHandler processingHandler) {
-        return RouterFunctions.route(RequestPredicates.POST("/process"), processingHandler::process);
+    public RouterFunction<ServerResponse> process(final Processing processing) {
+        return RouterFunctions.route(RequestPredicates.POST(Constants.PROCESS), processing::process);
     }
 }

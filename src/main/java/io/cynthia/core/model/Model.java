@@ -1,21 +1,23 @@
-package io.cynthia.core;
+package io.cynthia.core.model;
+
+import java.util.Map;
+import java.util.Properties;
 
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import org.tensorflow.Session;
 
-import java.util.Map;
-import java.util.Properties;
-
-@Accessors(chain = true)
+@Accessors(fluent = true)
 @AllArgsConstructor
+@Builder
 @Data
+@EqualsAndHashCode
 @NoArgsConstructor
 public class Model {
+    private Lambda lambda;
     private Map<String, Object> index;
     private Properties properties;
     private Session session;
-    private String location;
     private String id;
 }

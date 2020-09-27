@@ -1,13 +1,13 @@
-package io.cynthia.core;
+package io.cynthia.core.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 
-@Accessors(chain = true)
+@Accessors(fluent = true)
 @AllArgsConstructor
+@Builder
 @Data
+@EqualsAndHashCode
 @NoArgsConstructor
 public class ModelDef {
     private String location;

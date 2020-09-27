@@ -1,25 +1,28 @@
-package io.cynthia.handler;
+package io.cynthia.server.handlers;
 
-import io.cynthia.core.Request;
-import io.cynthia.core.Response;
-import io.cynthia.service.ProcessingService;
-import lombok.extern.slf4j.Slf4j;
+import io.cynthia.server.request.Processor;
+import io.cynthia.server.request.Request;
+import io.cynthia.server.request.Response;
+
+import javax.inject.Inject;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+
 import reactor.core.publisher.Mono;
 
-import javax.inject.Inject;
-
-@Slf4j
 @Component
-public class ProcessingHandler {
+@RequiredArgsConstructor
+public class Processing {
 
     @Inject
-    ProcessingService processingService;
+    final Processor processingService;
 
-    public Mono<ServerResponse> process(ServerRequest serverRequest) {
+    public Mono<ServerResponse> process(final ServerRequest serverRequest) {
         return serverRequest.bodyToMono(Request.class)
             .flatMap(request ->
                 ServerResponse.ok()
