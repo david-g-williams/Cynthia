@@ -14,32 +14,37 @@ import javax.annotation.PostConstruct;
 import io.cynthia.utils.Resources;
 import io.cynthia.utils.Serialization;
 
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
 
+import org.tensorflow.Session;
 import org.tensorflow.framework.ConfigProto;
 import org.tensorflow.framework.GPUOptions;
 import org.tensorflow.SavedModelBundle;
 
 import static io.cynthia.Constants.*;
+import static io.cynthia.utils.Resources.loadPropertyFile;
 import static io.cynthia.utils.Resources.readResource;
 import static io.cynthia.utils.Serialization.yamlToObject;
 
 @Accessors(fluent = true)
+@Builder
 @Component
 @Data
-@NoArgsConstructor
+@FieldDefaults(makeFinal=true, level= AccessLevel.PRIVATE)
 @Slf4j
 public class Loader {
-    private final List<SavedModelBundle> savedModelBundles = new ArrayList<>();
-    private final Map<String, Model> models = new HashMap<>();
+    List<SavedModelBundle> savedModelBundles = new ArrayList<>();
+    Map<String, Model> models = new HashMap<>();
 
     @PostConstruct
-    private void postConstruct() {
+    private void loadModels() {
         try {
             final Map<String, ModelDef> modelDefs = yamlToObject(readResource(MODELS_YAML), new TypeReference<>() {});
             for(final String modelId : modelDefs.keySet()) {
@@ -51,74 +56,65 @@ public class Loader {
         }
     }
 
+    private Model loadModel(final String modelId, final ModelDef modelDef) throws Exception {
+        final Path archivePath = Paths.get(modelDef.location());
+        final Path tempDirectory = Paths.get(System.getProperty(TMP_DIR), CYNTHIA, MODELS);
+        final Path unpackDirectory = Paths.get(tempDirectory.toString(), UUID.randomUUID().toString());
+        Resources.decompressTarGZArchive(archivePath, unpackDirectory);
+        final Properties properties = loadModelProperties(unpackDirectory);
+        return Model.builder()
+            .id(modelId)
+            .index(loadModelIndex(properties, unpackDirectory))
+            .lambda(loadModelLambda(properties))
+            .properties(properties)
+            .session(loadSession(modelDef, properties, unpackDirectory))
+            .build();
+    }
+
+    private Properties loadModelProperties(final Path unpackDirectory) throws Exception {
+        final Path propertyFile = Paths.get(unpackDirectory.toString(), MODEL_PROPERTIES);
+        return loadPropertyFile(propertyFile);
+    }
+
+    private Map<String, Object> loadModelIndex(final Properties properties, final Path unpackDirectory) throws Exception {
+        final String indexFileName = properties.getProperty(MODEL_INDEX, INDEX_JSON);
+        final Path indexFilePath = Paths.get(unpackDirectory.toString(), indexFileName);
+        final byte[] jsonBytes = Resources.readBinaryFile(indexFilePath);
+        final String jsonString = new String(jsonBytes, StandardCharsets.UTF_8);
+        return Serialization.jsonToObject(jsonString, new TypeReference<>() {});
+    }
+
+    private Lambda loadModelLambda(final Properties properties) throws Exception {
+        final String lambdaName = properties.getProperty(MODEL_LAMBDA);
+        return (Lambda) Class.forName(lambdaName).getDeclaredConstructor().newInstance();
+    }
+
+    private Session loadSession(final ModelDef modelDef, final Properties properties, final Path unpackDirectory) {
+        final String modelBundle = properties.getProperty(MODEL_BUNDLE, MODEL);
+        final String modelPath = Paths.get(unpackDirectory.toString(), modelBundle).toString();
+        final double gpuFraction = modelDef.gpuFraction();
+        final GPUOptions gpuOptions = GPUOptions.newBuilder()
+            .setPerProcessGpuMemoryFraction(gpuFraction)
+            .build();
+        final ConfigProto configProto = ConfigProto.newBuilder()
+            .setAllowSoftPlacement(true)
+            .setGpuOptions(gpuOptions)
+            .build();
+        final byte[] configProtoBytes = configProto.toByteArray();
+        final SavedModelBundle savedModelBundle = SavedModelBundle.loader(modelPath)
+            .withTags(SERVE)
+            .withConfigProto(configProtoBytes)
+            .load();
+        savedModelBundles.add(savedModelBundle);
+        return savedModelBundle.session();
+    }
+
     private void addShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info(SHUTDOWN_MESSAGE);
-            for (SavedModelBundle savedModelBundle : savedModelBundles) {
+            for (final SavedModelBundle savedModelBundle : savedModelBundles) {
                 savedModelBundle.close();
             }
         }));
-    }
-
-    public Model loadModel(final String modelId, final ModelDef modelDef) {
-        try {
-            final Path archivePath = Paths.get(modelDef.location());
-            final Path tempDirectory = Paths.get(System.getProperty(TMP_DIR), CYNTHIA, MODELS);
-            final Path unpackDirectory = Paths.get(tempDirectory.toString(), UUID.randomUUID().toString());
-
-            Resources.decompressTarGZArchive(archivePath, unpackDirectory);
-
-            final Model model = new Model().id(modelId);
-            final Properties properties = new Properties();
-            final Path propertyFile = Paths.get(unpackDirectory.toString(), MODEL_PROPERTIES);
-
-            try (final InputStream propertiesInputStream = new FileInputStream(propertyFile.toFile())) {
-                properties.load(propertiesInputStream);
-            }
-
-            model.properties(properties);
-
-            final String indexFileName = properties.getProperty(MODEL_INDEX, INDEX_JSON);
-            final Path indexFilePath = Paths.get(unpackDirectory.toString(), indexFileName);
-
-            if (Files.exists(indexFilePath)) {
-                final byte[] jsonBytes = Resources.readBinaryFile(indexFilePath);
-                final String jsonString = new String(jsonBytes, StandardCharsets.UTF_8);
-                final Map<String, Object> index = Serialization.jsonToObject(jsonString, new TypeReference<>() {
-                });
-                model.index(index);
-            }
-
-            final String processorName = model.properties().getProperty(MODEL_LAMBDA);
-
-            final Lambda lambda = (Lambda) Class.forName(processorName).getDeclaredConstructor().newInstance();
-
-            model.lambda(lambda);
-
-            final String modelBundle = properties.getProperty(MODEL_BUNDLE, MODEL);
-
-            final String modelPath = Paths.get(unpackDirectory.toString(), modelBundle).toString();
-
-            final ConfigProto configProto = ConfigProto.newBuilder()
-                .setAllowSoftPlacement(true)
-                .setGpuOptions(GPUOptions
-                    .newBuilder()
-                    .setPerProcessGpuMemoryFraction(1.00)
-                    .build())
-                .build();
-
-            final SavedModelBundle savedModelBundle = SavedModelBundle.loader(modelPath)
-                .withTags(SERVE)
-                .withConfigProto(configProto.toByteArray())
-                .load();
-
-            model.session(savedModelBundle.session());
-
-            savedModelBundles.add(savedModelBundle);
-
-            return model;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

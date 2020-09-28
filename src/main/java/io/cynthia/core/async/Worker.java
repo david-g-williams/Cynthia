@@ -22,6 +22,7 @@ public class Worker<T> {
     private Set<Worker<?>> after;
     private String name;
     private Supplier<T> lambda;
+    private T result;
     private Throwable throwable;
 
     public boolean isDone() {
@@ -34,14 +35,13 @@ public class Worker<T> {
         return true;
     }
 
-    public T process() {
+    public void process() {
         try {
             started = true;
             final long start = System.nanoTime();
-            final T result = lambda.get();
+            result = lambda.get();
             duration = (System.nanoTime() - start) / 1e6;
             completed = true;
-            return result;
         } catch (Throwable t) {
             exception = true;
             throwable = t;

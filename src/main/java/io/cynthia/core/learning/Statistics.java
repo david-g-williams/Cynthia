@@ -1,5 +1,8 @@
 package io.cynthia.core.learning;
 
+import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
+import org.apache.commons.math3.random.Well512a;
+
 import java.util.Collection;
 import java.util.Deque;
 
@@ -37,5 +40,9 @@ public final class Statistics {
         for (final Double value : values)
             average = updateAverage(value, average, currentCount++);
         return average;
+    }
+
+    public static int sample(final double[] weights, final int[] items) {
+        return new EnumeratedIntegerDistribution(new Well512a(), items, weights).sample();
     }
 }

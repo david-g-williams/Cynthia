@@ -17,17 +17,16 @@ import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
-public class Processing {
-
+public class Process {
+    
     @Inject
-    final Processor processingService;
+    final Processor processor;
 
     public Mono<ServerResponse> process(final ServerRequest serverRequest) {
         return serverRequest.bodyToMono(Request.class)
             .flatMap(request ->
                 ServerResponse.ok()
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(Mono.fromCallable(() ->
-                        processingService.process(request)), Response.class));
+                    .body(Mono.fromCallable(() -> processor.process(request)), Response.class));
     }
 }

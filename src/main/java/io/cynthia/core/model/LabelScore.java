@@ -2,14 +2,14 @@ package io.cynthia.core.model;
 
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.FieldDefaults;
 
 @Accessors(fluent = true)
 @AllArgsConstructor
 @Builder
 @Data
-@EqualsAndHashCode
-@NoArgsConstructor
+@FieldDefaults(level= AccessLevel.PRIVATE)
 public class LabelScore {
-    private String label;
-    private double score;
+    String label;
+    double score;
 }

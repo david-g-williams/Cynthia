@@ -7,79 +7,56 @@ import java.util.Map;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
-import org.apache.commons.math3.random.Well512a;
-
 import static io.cynthia.Constants.EPSILON;
+import static io.cynthia.Constants.INFINITY;
+import static io.cynthia.core.learning.Statistics.argMax;
+import static io.cynthia.core.learning.Statistics.sample;
 
 @Accessors(fluent = true)
 @AllArgsConstructor
 @Builder
 @Data
-@EqualsAndHashCode
 @NoArgsConstructor
 public class QLearning {
-    private double alpha = 0.01;
-    private double alphaDecay = 1.0;
-    private double epsilon = 1.0;
-    private double epsilonDecay = 0.999;
-    private double gamma = 1.0;
-    private int[] actions;
-    private int nActions;
+    private double discountRate = 1.0;
+    private double explorationRate = 1.0;
+    private double explorationRateDecay = 0.999;
+    private double learningRate = 0.01;
+    private double learningRateDecay = 1.0;
+    private int[] actions = new int[0];
+    private Map<String, Double> explorationRates = new HashMap<>();
     private Map<String, double[]> qValues = new HashMap<>();
-    private Map<String, Double> stateEpsilons = new HashMap<>();
-
-    public static QLearning actions(final int nActions) {
-        final QLearning qLearning = new QLearning();
-        qLearning.nActions = nActions;
-        qLearning.actions = new int[nActions];
-        for(int i = 0; i < nActions; i++)
-            qLearning.actions[i] = i;
-        return qLearning;
-    }
 
     private double bellmanUpdate(final double qValue, final double nextQValue, final double reward) {
-        return (1 - alpha) * qValue + alpha * (reward + gamma * nextQValue);
-    }
-
-    private int sample(final double[] weights) {
-        return new EnumeratedIntegerDistribution(new Well512a(), actions, weights).sample();
+        return (1 - learningRate) * qValue + learningRate * (reward + discountRate * nextQValue);
     }
 
     private double[] epsilonGreedyWeights(final String state) {
-        final double[] samplingWeights = new double[nActions];
-        final double explorationRate = stateEpsilons.getOrDefault(state, this.epsilon);
-        final double[] qValues = this.qValues.getOrDefault(state, new double[nActions]);
-        Arrays.fill(samplingWeights, explorationRate / nActions);
-        samplingWeights[Statistics.argMax(qValues)] = 1 - explorationRate + explorationRate / nActions;
+        final double explorationRate = explorationRates.getOrDefault(state, this.explorationRate);
+        final double[] samplingWeights = new double[actions.length];
+        Arrays.fill(samplingWeights, explorationRate / actions.length);
+        final double[] qValues = this.qValues.getOrDefault(state, new double[actions.length]);
+        samplingWeights[argMax(qValues)] = 1 - explorationRate + explorationRate / actions.length;
         return samplingWeights;
     }
 
-    public int nextAction(final String state) {
-        if(stateEpsilons.getOrDefault(state, Double.MAX_VALUE) < EPSILON) {
-            return Statistics.argMax(qValues.get(state));
-        }
-        final double[] samplingWeights = epsilonGreedyWeights(state);
-        return sample(samplingWeights);
-    }
-
+    @Synchronized
     public synchronized void learn(final Observation observation) {
-        final String state = observation.state();
-        final int action = observation.action();
         final double reward = observation.reward();
+        final int action = observation.action();
         final String nextState = observation.nextState();
+        final String state = observation.state();
 
-        if(!stateEpsilons.containsKey(state)) {
-            stateEpsilons.put(state, this.epsilon);
+        if(!explorationRates.containsKey(state)) {
+            explorationRates.put(state, this.explorationRate);
         } else {
-            if(stateEpsilons.get(state) < EPSILON) {
+            if(explorationRates.get(state) < EPSILON) {
                 return;
             }
-            stateEpsilons.put(state, stateEpsilons.get(state) * epsilonDecay);
         }
 
         if(!qValues.containsKey(state)) {
-            qValues.put(state, new double[nActions]);
+            qValues.put(state, new double[actions.length]);
         }
 
         if(observation.done()) {
@@ -88,10 +65,10 @@ public class QLearning {
         } else {
             final int nextGreedyAction;
             if (qValues.containsKey(nextState))
-                nextGreedyAction = Statistics.argMax(qValues.get(nextState));
+                nextGreedyAction = argMax(qValues.get(nextState));
             else {
-                nextGreedyAction = (int) (Math.random() * nActions);
-                qValues.put(nextState, new double[nActions]);
+                nextGreedyAction = (int) (Math.random() * actions.length);
+                qValues.put(nextState, new double[actions.length]);
             }
 
             qValues.get(state)[action] = bellmanUpdate(
@@ -101,6 +78,14 @@ public class QLearning {
             );
         }
 
-        alpha = alpha * alphaDecay;
+        learningRate = learningRate * learningRateDecay;
+        explorationRates.put(state, explorationRates.get(state) * explorationRateDecay);
+    }
+
+    public int nextAction(final String state) {
+        if(explorationRates.getOrDefault(state, INFINITY) < EPSILON) {
+            return argMax(qValues.get(state));
+        }
+        return sample(epsilonGreedyWeights(state), actions);
     }
 }

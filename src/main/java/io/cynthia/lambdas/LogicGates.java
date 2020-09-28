@@ -10,7 +10,7 @@ import java.util.List;
 public class LogicGates implements Lambda {
 
     @Override
-    public List<List<LabelScore>> process(Request request, Model model) {
+    public List<List<LabelScore>> process(final Request request, final Model model) {
         return null;
     }
 }

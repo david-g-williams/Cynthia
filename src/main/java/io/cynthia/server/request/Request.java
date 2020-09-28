@@ -13,6 +13,6 @@ import java.util.Map;
 @EqualsAndHashCode
 @NoArgsConstructor
 public class Request {
-    private List<Map<String, Object>> data;
+    private List<Map<String, Object>> query;
     private String modelId;
 }
