@@ -2,36 +2,36 @@ package io.cynthia.core.async;
 
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.FieldDefaults;
 
 import java.util.Set;
 import java.util.function.Supplier;
 
 @Accessors(fluent = true)
-@AllArgsConstructor
 @Builder
-@Data
 @EqualsAndHashCode
-@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Worker<T> {
-    private boolean completed;
-    private boolean exception;
-    private boolean interrupted;
-    private boolean parallel;
-    private boolean started;
-    private double duration;
-    private Set<Worker<?>> after;
-    private String name;
-    private Supplier<T> lambda;
-    private T result;
-    private Throwable throwable;
+    @Getter boolean completed;
+    @Getter boolean exception;
+    @Getter boolean interrupted;
+    @Getter @Setter boolean parallel;
+    @Getter boolean started;
+    @Getter double duration;
+    Set<Worker<?>> after;
+    @Getter String name;
+    Supplier<T> lambda;
+    @Getter T result;
+    @Getter Throwable throwable;
 
     public boolean isDone() {
         return completed || exception || interrupted;
     }
 
     public boolean isReady() {
-        for (final Worker<?> worker : this.after)
+        for (final Worker<?> worker : this.after) {
             if (!worker.isDone()) return false;
+        }
         return true;
     }
 

@@ -2,9 +2,7 @@ package io.cynthia.core.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -15,12 +13,11 @@ import io.cynthia.utils.Resources;
 import io.cynthia.utils.Serialization;
 
 import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import org.tensorflow.Session;
@@ -34,14 +31,12 @@ import static io.cynthia.utils.Resources.readResource;
 import static io.cynthia.utils.Serialization.yamlToObject;
 
 @Accessors(fluent = true)
-@Builder
 @Component
-@Data
 @FieldDefaults(makeFinal=true, level= AccessLevel.PRIVATE)
 @Slf4j
 public class Loader {
     List<SavedModelBundle> savedModelBundles = new ArrayList<>();
-    Map<String, Model> models = new HashMap<>();
+    @Getter Map<String, Model> models = new HashMap<>();
 
     @PostConstruct
     private void loadModels() {

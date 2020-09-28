@@ -7,9 +7,8 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @Builder
 @Data
-@EqualsAndHashCode
 @NoArgsConstructor
 public class Options {
-    private float threshold;
-    private int top;
+    float threshold;
+    int top;
 }

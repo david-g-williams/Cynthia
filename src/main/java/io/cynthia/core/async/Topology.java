@@ -1,18 +1,12 @@
 package io.cynthia.core.async;
 
 import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
+import lombok.experimental.FieldDefaults;
 
-@Accessors(fluent = true)
-@AllArgsConstructor
 @Builder
-@Data
-@EqualsAndHashCode
-@NoArgsConstructor
-@Slf4j
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class Topology {
-    private WorkerPool workerPool;
+    WorkerPool workerPool;
 
     public void process() {
         WorkerPool cursorPool = workerPool;
