@@ -10,10 +10,10 @@ public class RequestTest {
 
     @Test
     public void CreateRequest_WithValidData_IsSuccessful() {
-        Request request = new Request().modelId("testId")
+        Request request = Request.builder().modelId("testId")
             .query(Collections.singletonList(
                 Map.ofEntries(Map.entry("a", true),
-                              Map.entry("b", false))));
+                              Map.entry("b", false)))).build();
         assertEquals("testId", request.modelId());
         assertEquals(1, request.query().size());
         assertEquals(2, request.query().get(0).size());

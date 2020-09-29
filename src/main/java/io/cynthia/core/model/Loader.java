@@ -32,23 +32,19 @@ import static io.cynthia.utils.Serialization.yamlToObject;
 
 @Accessors(fluent = true)
 @Component
-@FieldDefaults(makeFinal=true, level= AccessLevel.PRIVATE)
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 @Slf4j
 public class Loader {
     List<SavedModelBundle> savedModelBundles = new ArrayList<>();
     @Getter Map<String, Model> models = new HashMap<>();
 
     @PostConstruct
-    private void loadModels() {
-        try {
-            final Map<String, ModelDef> modelDefs = yamlToObject(readResource(MODELS_YAML), new TypeReference<>() {});
-            for(final String modelId : modelDefs.keySet()) {
-                models.put(modelId, loadModel(modelId, modelDefs.get(modelId)));
-            }
-            addShutdownHook();
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
+    private void loadModels() throws Exception {
+        final Map<String, ModelDef> modelDefs = yamlToObject(readResource(MODELS_YAML), new TypeReference<>() {});
+        for(final String modelId : modelDefs.keySet()) {
+            models.put(modelId, loadModel(modelId, modelDefs.get(modelId)));
         }
+        addShutdownHook();
     }
 
     private Model loadModel(final String modelId, final ModelDef modelDef) throws Exception {
@@ -95,10 +91,10 @@ public class Loader {
             .setAllowSoftPlacement(true)
             .setGpuOptions(gpuOptions)
             .build();
-        final byte[] configProtoBytes = configProto.toByteArray();
+        final byte[] protoBytes = configProto.toByteArray();
         final SavedModelBundle savedModelBundle = SavedModelBundle.loader(modelPath)
             .withTags(SERVE)
-            .withConfigProto(configProtoBytes)
+            .withConfigProto(protoBytes)
             .load();
         savedModelBundles.add(savedModelBundle);
         return savedModelBundle.session();

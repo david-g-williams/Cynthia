@@ -5,7 +5,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import io.cynthia.core.learning.Observation;
@@ -22,13 +21,13 @@ import static io.cynthia.Constants.*;
 @Builder
 @FieldDefaults(makeFinal=true, level= AccessLevel.PRIVATE)
 @Slf4j
-public class WorkerPool {
+public class Scheduler {
     static ExecutorService executorService = Executors.newFixedThreadPool(AVAILABLE_PROCESSORS);
     static ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) executorService;
 
     String name;
     Set<Worker<?>> workers;
-    @Getter Supplier<WorkerPool> next;
+    @Getter Supplier<Scheduler> next;
 
     private final QLearning qLearning = QLearning.builder()
         .actions(new int[] {0, 1})
@@ -62,22 +61,23 @@ public class WorkerPool {
 
         while (workerDeque.size() > 0) {
             final List<Worker<?>> ready = new ArrayList<>();
-
+            final List<Worker<?>> notReady = new ArrayList<>();
             while (workerDeque.size() > 0) {
                 final Worker<?> worker = workerDeque.poll();
                 if(worker.isReady()) {
                     ready.add(worker);
                 } else {
-                    workerDeque.add(worker);
+                    notReady.add(worker);
                 }
             }
+            workerDeque.addAll(notReady);
 
             if (ready.size() > 0) {
                 int maxIndex = 0;
                 double maxDuration = -1.0 * INFINITY;
                 for (int i = 0; i < ready.size(); i++) {
                     final Worker<?> worker = ready.get(i);
-                    final double workerDuration = Metrics.averageWorkerDuration(worker);
+                    final double workerDuration = Metrics.getMovingAverage(worker.name());
                     if (workerDuration > maxDuration) {
                         maxIndex = i;
                         maxDuration = workerDuration;
@@ -102,7 +102,9 @@ public class WorkerPool {
                             return true;
                         }, executorService).thenAccept(completed -> {
                             if (completed) {
-                                Metrics.updateWorkerDuration(worker);
+                                Metrics.appendMovingAverage(
+                                    worker.name(),
+                                    worker.duration());
                             }
                         }));
                 } else {
@@ -113,8 +115,9 @@ public class WorkerPool {
 
         final CompletableFuture<?>[] futureArray = completableFutures.toArray(new CompletableFuture[0]);
 
-        if(futureArray.length > 0)
+        if(futureArray.length > 0) {
             CompletableFuture.allOf(futureArray).join();
+        }
 
         final double reward = -1.0 * (System.nanoTime() - start) / 1e6;
 
@@ -126,6 +129,5 @@ public class WorkerPool {
             .build();
 
         qLearning.learn(observation);
-
     }
 }

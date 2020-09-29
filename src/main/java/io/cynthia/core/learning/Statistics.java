@@ -1,15 +1,17 @@
 package io.cynthia.core.learning;
 
+import lombok.experimental.UtilityClass;
+
 import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
 import org.apache.commons.math3.random.Well512a;
 
 import java.util.Collection;
-import java.util.Deque;
 
 import static io.cynthia.Constants.EPSILON;
 import static io.cynthia.Constants.INFINITY;
 
-public final class Statistics {
+@UtilityClass
+public class Statistics {
 
     public static int argMax(final double[] input) {
         int maxIndex = 0;

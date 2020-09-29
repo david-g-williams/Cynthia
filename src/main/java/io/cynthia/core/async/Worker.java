@@ -29,8 +29,10 @@ public class Worker<T> {
     }
 
     public boolean isReady() {
-        for (final Worker<?> worker : this.after) {
-            if (!worker.isDone()) return false;
+        if (this.after != null) {
+            for (final Worker<?> worker : this.after) {
+                if (!worker.isDone()) return false;
+            }
         }
         return true;
     }

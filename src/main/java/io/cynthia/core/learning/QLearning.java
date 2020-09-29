@@ -3,9 +3,11 @@ package io.cynthia.core.learning;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.FieldDefaults;
 
 import static io.cynthia.Constants.EPSILON;
 import static io.cynthia.Constants.INFINITY;
@@ -13,19 +15,18 @@ import static io.cynthia.core.learning.Statistics.argMax;
 import static io.cynthia.core.learning.Statistics.sample;
 
 @Accessors(fluent = true)
-@AllArgsConstructor
 @Builder
-@Data
-@NoArgsConstructor
+@Getter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class QLearning {
-    private double discountRate = 1.0;
-    private double explorationRate = 1.0;
-    private double explorationRateDecay = 0.999;
-    private double learningRate = 0.01;
-    private double learningRateDecay = 1.0;
-    private int[] actions = new int[0];
-    private Map<String, Double> explorationRates = new HashMap<>();
-    private Map<String, double[]> qValues = new HashMap<>();
+    double discountRate = 1.0;
+    double explorationRate = 1.0;
+    double explorationRateDecay = 0.999;
+    double learningRate = 0.01;
+    double learningRateDecay = 1.0;
+    int[] actions = new int[0];
+    Map<String, Double> explorationRates = new ConcurrentHashMap<>();
+    Map<String, double[]> qValues = new ConcurrentHashMap<>();
 
     private double bellmanUpdate(final double qValue, final double nextQValue, final double reward) {
         return (1 - learningRate) * qValue + learningRate * (reward + discountRate * nextQValue);
@@ -41,7 +42,7 @@ public class QLearning {
     }
 
     @Synchronized
-    public synchronized void learn(final Observation observation) {
+    public void learn(final Observation observation) {
         final double reward = observation.reward();
         final int action = observation.action();
         final String nextState = observation.nextState();
@@ -83,6 +84,9 @@ public class QLearning {
     }
 
     public int nextAction(final String state) {
+        if (explorationRates == null) explorationRates = new ConcurrentHashMap<>();
+        if (qValues == null) qValues = new ConcurrentHashMap<>();
+
         if(explorationRates.getOrDefault(state, INFINITY) < EPSILON) {
             return argMax(qValues.get(state));
         }

@@ -9,7 +9,7 @@ import java.util.Map;
 @Accessors(fluent = true)
 @AllArgsConstructor
 @Builder
-@Data
+@Getter
 @EqualsAndHashCode
 @NoArgsConstructor
 public class Request {

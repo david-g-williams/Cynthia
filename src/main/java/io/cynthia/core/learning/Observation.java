@@ -4,18 +4,17 @@ import java.util.Map;
 
 import lombok.*;
 import lombok.experimental.Accessors;
+import lombok.experimental.FieldDefaults;
 
 @Accessors(fluent = true)
-@AllArgsConstructor
 @Builder
-@Data
-@EqualsAndHashCode
-@NoArgsConstructor
+@Getter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Observation {
-    private boolean done;
-    private double reward;
-    private int action;
-    private Map<String, Object> info;
-    private String nextState;
-    private String state;
+    boolean done;
+    double reward;
+    int action;
+    Map<String, Object> info;
+    String nextState;
+    String state;
 }

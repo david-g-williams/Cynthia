@@ -6,18 +6,18 @@ import java.util.Properties;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import lombok.experimental.FieldDefaults;
 import org.tensorflow.Session;
 
 @Accessors(fluent = true)
 @AllArgsConstructor
 @Builder
-@Data
-@EqualsAndHashCode
-@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Getter
 public class Model {
-    private Lambda lambda;
-    private Map<String, Object> index;
-    private Properties properties;
-    private Session session;
-    private String id;
+    Lambda lambda;
+    Map<String, Object> index;
+    Properties properties;
+    Session session;
+    String id;
 }

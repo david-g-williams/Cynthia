@@ -7,9 +7,8 @@ import lombok.experimental.FieldDefaults;
 @Accessors(fluent = true)
 @AllArgsConstructor
 @Builder
-@Data
+@Getter
 @FieldDefaults(level= AccessLevel.PRIVATE)
-@NoArgsConstructor
 public class ModelDef {
     String location;
     double gpuFraction = 1.0;

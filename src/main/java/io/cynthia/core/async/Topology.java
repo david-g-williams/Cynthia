@@ -6,14 +6,14 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class Topology {
-    WorkerPool workerPool;
+    Scheduler scheduler;
 
     public void process() {
-        WorkerPool cursorPool = workerPool;
+        Scheduler cursorPool = scheduler;
         while (cursorPool != null) {
             cursorPool.process();
-            if (workerPool.next() != null) {
-                cursorPool = workerPool.next().get();
+            if (scheduler.next() != null) {
+                cursorPool = scheduler.next().get();
             } else {
                 break;
             }
