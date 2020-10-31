@@ -12,7 +12,7 @@ import static io.cynthia.Constants.COMPONENT_SCAN;
 @ComponentScan(COMPONENT_SCAN)
 @SpringBootApplication
 public class Main {
-    public static void main(@NonNull final String[] args) {
+    public static void main(final String[] args) {
         SpringApplication.run(Main.class, args);
     }
 }
