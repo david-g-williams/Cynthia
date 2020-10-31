@@ -1,10 +1,9 @@
 package io.cynthia.core.model;
 
-import io.cynthia.server.request.Request;
+import io.cynthia.server.request.ModelRequest;
+import java.util.stream.Stream;
+import lombok.NonNull;
 
-import java.util.List;
-
-@FunctionalInterface
-public interface Lambda {
-    List<?> process(Request request, Model model);
+public abstract class Lambda<T> {
+    public abstract Stream<T> process(@NonNull final ModelRequest modelRequest);
 }
