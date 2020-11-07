@@ -8,18 +8,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-
-import io.cynthia.core.Environment;
-import io.cynthia.utils.Resources;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldDefaults;
 
 @Accessors(fluent = true)
-@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Getter
 @RequiredArgsConstructor
 public class TaskPool {
@@ -38,7 +34,7 @@ public class TaskPool {
                     final CompletableFuture<Void> completableFuture = CompletableFuture.supplyAsync(() -> {
                         task.process();
                         return null;
-                    }, Resources.SHARED_THREAD_POOL);
+                    }, Workflow.SHARED_THREAD_POOL);
                     completableFuture.thenAccept(completed -> task.completed(Instant.now()));
                     completableFutures.add(completableFuture);
                 } else {

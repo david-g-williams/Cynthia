@@ -1,21 +1,19 @@
 package io.cynthia.core.async;
 
 import io.cynthia.core.exceptions.TaskProcessingException;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-
 import java.time.Instant;
+import java.util.function.Supplier;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
+import lombok.experimental.Accessors;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 
 @Accessors(fluent = true)
 @Getter
 public class Task<T> {
-    boolean interrupted;
     Instant created;
     Instant finished;
     Instant started;
@@ -51,7 +49,7 @@ public class Task<T> {
     }
 
     public boolean isCompleted() {
-        return Objects.nonNull(result()) || interrupted();
+        return Objects.nonNull(finished());
     }
 
     public boolean isReady() {

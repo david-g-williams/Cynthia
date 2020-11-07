@@ -15,6 +15,5 @@ public class Constants {
     public static final String MODELS_YAML = "/models.yaml";
     public static final String PROCESS = "/process";
     public static final String SERVE = "serve";
-    public static final String SHUTDOWN_MESSAGE = "Closing all SavedModelBundles.";
     public static final String TMP_DIR = System.getProperty("java.io.tmpdir");
 }
