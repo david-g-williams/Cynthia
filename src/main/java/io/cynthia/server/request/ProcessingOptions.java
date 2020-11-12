@@ -1,15 +1,12 @@
 package io.cynthia.server.request;
 
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.experimental.Accessors;
-import lombok.experimental.FieldDefaults;
 
 @Accessors(fluent = true)
-@Getter
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
+@Value
 public class ProcessingOptions {
     float threshold;
     int top;

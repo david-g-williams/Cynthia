@@ -15,7 +15,6 @@ import static io.cynthia.Constants.AVAILABLE_PROCESSORS;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class Workflow {
     public static final ExecutorService SHARED_THREAD_POOL = Executors.newFixedThreadPool(AVAILABLE_PROCESSORS);
-
     String id;
     TaskPool root;
 

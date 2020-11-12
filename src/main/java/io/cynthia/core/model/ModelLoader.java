@@ -1,11 +1,6 @@
 package io.cynthia.core.model;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -17,6 +12,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
+import io.cynthia.utils.JsonUtils;
 import lombok.AccessLevel;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
@@ -35,12 +31,12 @@ import org.tensorflow.Session;
 import static io.cynthia.Constants.CYNTHIA;
 import static io.cynthia.Constants.INDEX_JSON;
 import static io.cynthia.Constants.MODEL;
+import static io.cynthia.Constants.MODELS_JSON;
 import static io.cynthia.Constants.MODEL_BUNDLE;
 import static io.cynthia.Constants.MODEL_INDEX;
 import static io.cynthia.Constants.MODEL_LAMBDA;
 import static io.cynthia.Constants.MODEL_PROPERTIES;
 import static io.cynthia.Constants.MODELS;
-import static io.cynthia.Constants.MODELS_YAML;
 import static io.cynthia.Constants.SERVE;
 import static io.cynthia.Constants.TMP_DIR;
 
@@ -53,45 +49,28 @@ import static io.cynthia.Constants.TMP_DIR;
 @Component
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ModelLoader {
-    @Autowired ModelRegistry modelRegistry;
-    Map<String, ModelDefinition> modelDefinitions;
-    ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    ModelRegistry modelRegistry;
 
     @PostConstruct
     private void loadModels() throws Exception {
-        setupObjectMapper();
-        loadModelDefinitions();
-        registerModels();
-    }
-
-    private void registerModels() {
-        for (final String modelId : modelDefinitions.keySet()) {
-            modelRegistry.register(loadModel(modelDefinitions.get(modelId)));
+        final String modelDefJson = Files.readString(Paths.get(ModelLoader.class.getResource(MODELS_JSON).toURI()));
+        final Map<String, ModelDef> modelDefs =  JsonUtils.toObject(modelDefJson, new TypeReference<>() {});
+        for (final String modelId : modelDefs.keySet()) {
+            modelRegistry.register(loadModel(modelDefs.get(modelId)));
         }
     }
 
-    @SneakyThrows
-    private void loadModelDefinitions() {
-        modelDefinitions = objectMapper.readValue(readResource(MODELS_YAML), new TypeReference<>() {
-        });
-    }
-
-    private void setupObjectMapper() {
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-    }
-
-    private Model loadModel(@NonNull final ModelDefinition modelDefinition) {
-        final Path archivePath = Paths.get(modelDefinition.location());
+    private Model loadModel(@NonNull final ModelDef modelDef) {
+        final Path archivePath = Paths.get(modelDef.location());
         final Path tempDirectory = Paths.get(System.getProperty(TMP_DIR), CYNTHIA, MODELS);
         final Path workingDirectory = Paths.get(tempDirectory.toString(), UUID.randomUUID().toString());
         decompressTarGZArchive(archivePath, workingDirectory);
         final Properties properties = loadModelProperties(workingDirectory);
         final Lambda<?> lambda = loadModelLambda(properties);
         final Map<String, Object> index = loadModelIndex(properties, workingDirectory);
-        final Session session = loadTensorFlowSession(modelDefinition, workingDirectory, properties);
-        final String modelId = modelDefinition.modelId();
+        final Session session = loadTensorFlowSession(modelDef, workingDirectory, properties);
+        final String modelId = modelDef.modelId();
         return Model.of(lambda, index, properties, session, modelId);
     }
 
@@ -99,10 +78,9 @@ public class ModelLoader {
     private Map<String, Object> loadModelIndex(@NonNull final Properties properties, @NonNull final Path modelDirectory) {
         final String indexFileName = properties.getProperty(MODEL_INDEX, INDEX_JSON);
         final Path indexFilePath = Paths.get(modelDirectory.toString(), indexFileName);
-        final byte[] indexBytes = readBinaryFile(indexFilePath);
+        final byte[] indexBytes = Files.readAllBytes(indexFilePath);
         final String indexString = new String(indexBytes, StandardCharsets.UTF_8);
-        return objectMapper.readValue(indexString, new TypeReference<>() {
-        });
+        return JsonUtils.toObject(indexString, new TypeReference<>() {});
     }
 
     @SneakyThrows
@@ -116,12 +94,12 @@ public class ModelLoader {
         return loadPropertyFile(propertyFile);
     }
 
-    private Session loadTensorFlowSession(@NonNull final ModelDefinition modelDefinition,
+    private Session loadTensorFlowSession(@NonNull final ModelDef modelDef,
                                           @NonNull final Path unpackDirectory,
                                           @NonNull final Properties properties) {
         final String modelBundle = properties.getProperty(MODEL_BUNDLE, MODEL);
         final String modelPath = Paths.get(unpackDirectory.toString(), modelBundle).toString();
-        final double gpuFraction = modelDefinition.gpuFraction();
+        final double gpuFraction = modelDef.gpuFraction();
         final GPUOptions gpuOptions = GPUOptions.newBuilder()
                 .setPerProcessGpuMemoryFraction(gpuFraction)
                 .build();
@@ -135,16 +113,6 @@ public class ModelLoader {
                 .withConfigProto(protoBytes)
                 .load();
         return savedModelBundle.session();
-    }
-
-    @SneakyThrows
-    private String readResource(@NonNull final String resourcePath) {
-        return Files.readString(Paths.get(ModelLoader.class.getResource(resourcePath).toURI()));
-    }
-
-    @SneakyThrows
-    public byte[] readBinaryFile(@NonNull final Path binaryFilePath) {
-        return Files.readAllBytes(binaryFilePath);
     }
 
     @SneakyThrows

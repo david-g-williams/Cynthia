@@ -13,7 +13,8 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class ProcessingHandler {
-    @Autowired RequestProcessor requestProcessor;
+    @Autowired
+    RequestProcessor requestProcessor;
 
     public Mono<ServerResponse> process(@NonNull final ServerRequest serverRequest) {
         return serverRequest.bodyToMono(ModelRequest.class)

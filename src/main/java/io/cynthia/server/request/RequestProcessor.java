@@ -13,7 +13,8 @@ import reactor.core.publisher.Flux;
 @Controller
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RequestProcessor {
-    @Autowired ModelRegistry modelRegistry;
+    @Autowired
+    ModelRegistry modelRegistry;
 
     public Flux<?> process(@NonNull final ModelRequest modelRequest) {
         return modelRegistry.lookup(modelRequest.modelId()).lambda().process(modelRequest);

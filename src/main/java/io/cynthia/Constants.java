@@ -12,7 +12,7 @@ public class Constants {
     public static final String MODEL_NOT_FOUND = "Model %s not found.";
     public static final String MODEL_PROPERTIES = "model.properties";
     public static final String MODELS = "models";
-    public static final String MODELS_YAML = "/models.yaml";
+    public static final String MODELS_JSON = "/models.json";
     public static final String PROCESS = "/process";
     public static final String SERVE = "serve";
     public static final String TMP_DIR = System.getProperty("java.io.tmpdir");
